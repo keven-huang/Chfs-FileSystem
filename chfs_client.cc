@@ -395,20 +395,17 @@ int chfs_client::symlink(inum parent, const char *symbol, const char *links, inu
     ec->put(ino_out, std::string(links));
     std::string buf;
     ec->get(parent, buf);
-
-    printf("buf = %s", buf);
-
-    buf += "(" + std::string(symbol) + "," + filename(ino_out) + ")" + "/";
-    ec->put(parent, buf);
-
+    buf.append("(" + std::string(symbol) + "," + filename(ino_out) + ")" + "/");
+    printf("buf = %s\n",buf);
+    ec->put(parent,buf);
     return r;
 }
 
 int chfs_client::readlink(inum ino, std::string &links)
 {
     int r = OK;
-    std::string buf;
-    ec->get(ino, buf);
-    links = buf;
+    
+    ec->get(ino,links);
+
     return r;
 }
