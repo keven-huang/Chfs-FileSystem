@@ -73,7 +73,7 @@ bool chfs_client::isdir(inum inum)
         return false;
     }
 
-    if (a.type == extent_protocol::T_FILE)
+    if (a.type == extent_protocol::T_DIR)
     {
         printf("isfile: %lld is a file\n", inum);
         return true;
@@ -368,21 +368,25 @@ int chfs_client::unlink(inum parent, const char *name)
 int chfs_client::symlink(inum parent, const char *symbol, const char *links, inum &ino_out)
 {
     int r = OK;
-
+    printf("==== in func====");
+    inum inum;
+    bool found = false;
+    lookup(parent,symbol,found,ino_out);
+    if(found)
+        return EXIST;
     ec->create(extent_protocol::T_SYMLINK, ino_out);
     ec->put(ino_out, std::string(links));
     std::string buf;
     ec->get(parent, buf);
-
-    buf += "(" + std::string(symbol) + "," + filename(ino_out) + ")" + "/";
-
+    buf.append("(" + std::string(symbol) + "," + filename(ino_out) + ")" + "/");
+    printf("buf = %s\n",buf);
     ec->put(parent,buf);
     return r;
 }
 
 int chfs_client::readlink(inum ino,std::string &links){
     int r = OK;
-
+    
     ec->get(ino,links);
 
     return r;
