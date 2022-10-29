@@ -10,10 +10,10 @@
 #include "chfs_client.h"
 #include "extent_client.h"
 
-/* 
+/*
  * Your code here for Lab2A:
- * Here we treat each ChFS operation(especially write operation such as 'create', 
- * 'write' and 'symlink') as a transaction, your job is to use write ahead log 
+ * Here we treat each ChFS operation(especially write operation such as 'create',
+ * 'write' and 'symlink') as a transaction, your job is to use write ahead log
  * to achive all-or-nothing for these transactions.
  */
 
@@ -162,8 +162,7 @@ release:
 
 // Only support set size of attr
 // Your code here for Lab2A: add logging to ensure atomicity
-int
-chfs_client::setattr(inum ino, size_t size)
+int chfs_client::setattr(inum ino, size_t size)
 {
     int r = OK;
 
@@ -190,8 +189,7 @@ chfs_client::setattr(inum ino, size_t size)
 }
 
 // Your code here for Lab2A: add logging to ensure atomicity
-int
-chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
+int chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
 {
     int r = OK;
     printf("=============in Create========");
@@ -214,8 +212,7 @@ chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_out)
 }
 
 // Your code here for Lab2A: add logging to ensure atomicity
-int
-chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out)
+int chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out)
 {
     int r = OK;
 
@@ -331,9 +328,8 @@ int chfs_client::read(inum ino, size_t size, off_t off, std::string &data)
 }
 
 // Your code here for Lab2A: add logging to ensure atomicity
-int
-chfs_client::write(inum ino, size_t size, off_t off, const char *data,
-        size_t &bytes_written)
+int chfs_client::write(inum ino, size_t size, off_t off, const char *data,
+                       size_t &bytes_written)
 {
     printf("=============in Write========");
     int r = OK;
@@ -355,8 +351,8 @@ chfs_client::write(inum ino, size_t size, off_t off, const char *data,
 }
 
 int chfs_client::unlink(inum parent, const char *name)
-// Your code here for Lab2A: add logging to ensure atomicity
-int chfs_client::unlink(inum parent,const char *name)
+    // Your code here for Lab2A: add logging to ensure atomicity
+    int chfs_client::unlink(inum parent, const char *name)
 {
 
     int r = OK;
@@ -390,28 +386,29 @@ int chfs_client::symlink(inum parent, const char *symbol, const char *links, inu
     int r = OK;
     bool found = false;
     inum ino;
-    lookup(parent,symbol,found,ino);
-    if(found)
+    lookup(parent, symbol, found, ino);
+    if (found)
         return EXIST;
 
     ec->create(extent_protocol::T_SYMLINK, ino_out);
-    printf("ino = %d\n",parent);
+    printf("ino = %d\n", parent);
     ec->put(ino_out, std::string(links));
     std::string buf;
     ec->get(parent, buf);
 
-    printf("buf = %s",buf);
+    printf("buf = %s", buf);
 
     buf += "(" + std::string(symbol) + "," + filename(ino_out) + ")" + "/";
-    ec->put(parent,buf);
+    ec->put(parent, buf);
 
     return r;
 }
 
-int chfs_client::readlink(inum ino,std::string &links){
+int chfs_client::readlink(inum ino, std::string &links)
+{
     int r = OK;
     std::string buf;
-    ec->get(ino,buf);
+    ec->get(ino, buf);
     links = buf;
     return r;
 }
