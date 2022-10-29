@@ -82,10 +82,10 @@ sub dircheck {
         $h{$f} = $h{$f} + 1;
     }
     closedir(D);
+            print STDERR "test-lab1-part2-a.pl: $f is not in the directory listing\n";
 
     foreach $f (keys(%$files)){
         if(!defined($h{$f})){
-            print STDERR "test-lab1-part2-a.pl: $f is not in the directory listing\n";
             exit(1);
         }
         if($h{$f} > 1){
