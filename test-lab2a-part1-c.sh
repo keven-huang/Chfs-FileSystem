@@ -25,6 +25,7 @@ diff ${DIR}/testhostslink ${DIR}/hosts_copy >/dev/null 2>&1
 if [ $? -ne 0 ];
 then
     echo "failed SYMLINK test"
+    
     exit
 fi
 
@@ -38,7 +39,7 @@ then
 fi
 
 
-# crash chfs && wait for it to unmount
+# # crash chfs && wait for it to unmounts
 echo "===== ChFS Crash =====\n"
 # pkill -SIGUSR1 chfs_client
 ./stop.sh
@@ -62,7 +63,6 @@ do
     sleep 0.1
 done
 
-
 # recheck all symlink above
 diff ${ORIG_FILE} ${DIR}/hosts >/dev/null 2>&1
 if [ $? -ne 0 ];
@@ -71,7 +71,7 @@ then
     exit
 fi
 
-diff ${DIR}/testhostslink ${DIR}/hosts_copy >/dev/null 2>&1
+diff ${DIR}/testhostslink ${DIR}/hosts_copy 2>&1 >/dev/null
 if [ $? -ne 0 ];
 then 
     echo "failed SYMLINK test"

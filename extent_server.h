@@ -5,14 +5,15 @@
 
 #include <string>
 #include <map>
-#include <unistd.h> 
+#include <unistd.h>
 #include "extent_protocol.h"
 
 #include "inode_manager.h"
 #include "persister.h"
 
-class extent_server {
- protected:
+class extent_server
+{
+protected:
 #if 0
   typedef struct extent {
     std::string data;
@@ -23,7 +24,7 @@ class extent_server {
   inode_manager *im;
   chfs_persister *_persister;
 
- public:
+public:
   extent_server();
 
   int create(uint32_t type, extent_protocol::extentid_t &id);
@@ -33,13 +34,12 @@ class extent_server {
   int remove(extent_protocol::extentid_t id, int &);
 
   // Your code here for lab2A: add logging APIs
+  int LOG_BEGIN();
+  int LOG_COMMIT();
+  // restore from check
+  int restore();
+  static chfs_command::txid_t tid;
+  std::map<chfs_command::txid_t,bool> committed;
 };
 
-#endif 
-
-
-
-
-
-
-
+#endif

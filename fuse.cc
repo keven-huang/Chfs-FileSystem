@@ -214,6 +214,7 @@ void fuseserver_write(fuse_req_t req, fuse_ino_t ino,
 #if 1
     // Change the above line to "#if 1", and your code goes here
     int r;
+    printf("SIZE = %d\n",size);
     if ((r = chfs->write(ino, size, off, buf, size)) == chfs_client::OK)
     {
         fuse_reply_write(req, size);
@@ -538,8 +539,8 @@ void fuseserver_readlink(fuse_req_t req, fuse_ino_t ino)
     else
     {
         fuse_reply_err(req, ENOENT);
+        return;
     }
-    fuse_reply_readlink(req, buf.c_str());
 }
 
 struct fuse_lowlevel_ops fuseserver_oper;

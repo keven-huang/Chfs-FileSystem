@@ -198,16 +198,18 @@ int chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_ou
      * note: lookup is what you need to check if file exist;
      * after create file or dir, you must remember to modify the parent infomation.
      */
+    ec->LOG_BEGIN();
     std::string buf;
     inum _inum;
     bool found;
     lookup(parent, name, found, _inum);
     if (found)
         return EXIST;
-    ec->create(extent_protocol::T_FILE, ino_out);
-    ec->get(parent, buf);
+    r = ec->create(extent_protocol::T_FILE, ino_out);
+    r = ec->get(parent, buf);
     buf += ("(" + std::string(name)) + "," + filename(ino_out) + ")" + "/";
-    ec->put(parent, buf);
+    r = ec->put(parent, buf);
+    ec->LOG_COMMIT();
     return r;
 }
 
@@ -221,6 +223,7 @@ int chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out
      * note: lookup is what you need to check if directory exist;
      * after create file or dir, you must remember to modify the parent infomation.
      */
+    ec->LOG_BEGIN();
     std::string buf;
     inum _inum;
     bool found;
@@ -231,12 +234,14 @@ int chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out
     ec->get(parent, buf);
     buf += ("(" + std::string(name)) + "," + filename(ino_out) + ")" + "/";
     ec->put(parent, buf);
+    ec->LOG_COMMIT();
     return r;
 }
 
 int chfs_client::lookup(inum parent, const char *name, bool &found, inum &ino_out)
 {
     printf("=============in LoopUp========");
+    printf("parentnum = %d",parent);
     int r = OK;
 
     /*
@@ -314,7 +319,7 @@ int chfs_client::read(inum ino, size_t size, off_t off, std::string &data)
      * note: read using ec->get().
      */
 
-    ec->get(ino, data);
+    r = ec->get(ino, data);
 
     if (off <= (int)data.size())
     {
@@ -331,6 +336,7 @@ int chfs_client::read(inum ino, size_t size, off_t off, std::string &data)
 int chfs_client::write(inum ino, size_t size, off_t off, const char *data,
                        size_t &bytes_written)
 {
+    ec->LOG_BEGIN();
     printf("=============in Write========");
     int r = OK;
 
@@ -341,18 +347,18 @@ int chfs_client::write(inum ino, size_t size, off_t off, const char *data,
      */
     std::string buf;
     std::string data_buf = std::string(data, size);
-    ec->get(ino, buf);
+    r = ec->get(ino, buf);
     if (size + off > buf.size())
         buf.resize(off + size, '\0');
     bytes_written = size;
     buf.replace(off, size, data_buf);
-    ec->put(ino, buf);
+    r = ec->put(ino, buf);
+    ec->LOG_COMMIT();
     return r;
 }
 
+// Your code here for Lab2A: add logging to ensure atomicity
 int chfs_client::unlink(inum parent, const char *name)
-    // Your code here for Lab2A: add logging to ensure atomicity
-    int chfs_client::unlink(inum parent, const char *name)
 {
 
     int r = OK;
@@ -362,6 +368,7 @@ int chfs_client::unlink(inum parent, const char *name)
      * note: you should remove the file using ec->remove,
      * and update the parent directory content.
      */
+    ec->LOG_BEGIN();
     inum _inum;
     bool found;
     lookup(parent, name, found, _inum);
@@ -376,12 +383,13 @@ int chfs_client::unlink(inum parent, const char *name)
     buf.erase(start - 1, end - start + 2);
     printf("======after directory=====:%s", buf.c_str());
     ec->put(parent, buf);
-
+    ec->LOG_COMMIT();
     return r;
 }
 
 int chfs_client::symlink(inum parent, const char *symbol, const char *links, inum &ino_out)
 {
+    ec->LOG_BEGIN();
     printf("=====in symlink function===\n");
     int r = OK;
     bool found = false;
@@ -396,16 +404,17 @@ int chfs_client::symlink(inum parent, const char *symbol, const char *links, inu
     std::string buf;
     ec->get(parent, buf);
     buf.append("(" + std::string(symbol) + "," + filename(ino_out) + ")" + "/");
-    printf("buf = %s\n",buf);
-    ec->put(parent,buf);
+    printf("buf = %s\n", buf.c_str());
+    ec->put(parent, buf);
+    ec->LOG_COMMIT();
     return r;
 }
 
 int chfs_client::readlink(inum ino, std::string &links)
 {
     int r = OK;
-    
-    ec->get(ino,links);
-
+    std::string tmp;
+    ec->get(ino, tmp);
+    links = tmp;
     return r;
 }

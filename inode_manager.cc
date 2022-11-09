@@ -120,7 +120,6 @@ inode_manager::alloc_inode(uint32_t type)
       free(ino);
   }
 
-  printf("alloc_inode ===> inum=%d\n", inum);
   return (inum);
 }
 
@@ -173,7 +172,6 @@ void inode_manager::put_inode(uint32_t inum, struct inode *ino)
   char buf[BLOCK_SIZE];
   struct inode *ino_disk;
 
-  printf("\tim: put_inode %d\n", inum);
   if (ino == NULL)
     return;
 
@@ -204,7 +202,6 @@ blockid_t inode_manager::getBlk(inode_t *_ino, uint32_t n)
   }
   if (ID == 0)
   {
-    printf("ID=%d", ID);
     exit(0);
   }
   // printf("out");
@@ -274,14 +271,11 @@ void inode_manager::write_file(uint32_t inum, const char *buf, int size)
    * you need to consider the situation when the size of buf
    * is larger or smaller than the size of original inode
    */
-  printf("in Write File\n");
   inode_t *_ino = get_inode(inum);
   if (_ino != NULL)
   {
-    printf("size = %d\n", size);
     int OldBlkNum = _ino->size == 0 ? 0 : (_ino->size - 1) / BLOCK_SIZE + 1;
     int NewBlkNum = size == 0 ? 0 : (size - 1) / BLOCK_SIZE + 1;
-    printf("%d\n", NewBlkNum);
     if (NewBlkNum > OldBlkNum)
     {
       for (int i = OldBlkNum; i < NewBlkNum; ++i)
@@ -348,7 +342,6 @@ void inode_manager::remove_file(uint32_t inum)
    * your code goes here
    * note: you need to consider about both the data block and inode of the file
    */
-  printf("in Remove File\n");
   inode_t *_ino = get_inode(inum);
   if (_ino != NULL)
   {
