@@ -58,4 +58,14 @@ extent_client::remove(extent_protocol::extentid_t eid)
   return ret;
 }
 
+extent_protocol::status extent_client::LOG_BEGIN(){
+  extent_protocol::status ret = extent_protocol::OK;
+  ret = es->LOG_BEGIN();
+  return ret;
+}
 
+extent_protocol::status extent_client::LOG_COMMIT(){
+  extent_protocol::status ret = extent_protocol::OK;
+  ret = es->LOG_COMMIT();
+  return ret;
+}
