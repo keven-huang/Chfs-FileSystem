@@ -250,7 +250,7 @@ lcnt=$(cat tmp.0 | grep -o "OK" | wc -l)
 if [ $lcnt -ne 5 ];
 then
         echo "Failed test-part3-a: pass "$lcnt"/5"
-	score=$((score+$lcnt*10))
+	score=$((score+$lcnt*5))
 else
         #exit
 		ps -e | grep -q "chfs_client"
