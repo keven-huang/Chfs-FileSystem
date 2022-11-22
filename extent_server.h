@@ -5,6 +5,7 @@
 
 #include <string>
 #include <map>
+#include <unistd.h> 
 #include "extent_protocol.h"
 #include "inode_manager.h"
 
