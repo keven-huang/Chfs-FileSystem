@@ -6,8 +6,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-lock_server::lock_server():
-  nacquire (0)
+lock_server::lock_server() : nacquire(0),mtx(PTHREAD_MUTEX_INITIALIZER)
 {
 }
 
@@ -24,7 +23,24 @@ lock_protocol::status
 lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r)
 {
   lock_protocol::status ret = lock_protocol::OK;
-	// Your lab2B part2 code goes here
+  // Your lab2B part2 code goes here
+  pthread_mutex_lock(&mtx);
+
+  if (lock_manager.find(lid) != lock_manager.end())
+  {
+    while (!lock_map[lid])
+    {
+      pthread_cond_wait(&(lock_manager.find(lid)->second), &mtx);
+    }
+    lock_map[lid] = false;
+  }
+  else
+  {
+    lock_manager.emplace(std::pair<lock_protocol::lockid_t, pthread_cond_t>(lid, PTHREAD_COND_INITIALIZER));
+    lock_map.emplace(std::pair<lock_protocol::lockid_t, bool>(lid, false));
+  }
+
+  pthread_mutex_unlock(&mtx);
   return ret;
 }
 
@@ -32,6 +48,13 @@ lock_protocol::status
 lock_server::release(int clt, lock_protocol::lockid_t lid, int &r)
 {
   lock_protocol::status ret = lock_protocol::OK;
-	// Your lab2B part2 code goes here
+  // Your lab2B part2 code goes here
+  pthread_mutex_lock(&mtx);
+
+  lock_map[lid] = true;
+
+  pthread_cond_signal(&(lock_manager.find(lid)->second));
+
+  pthread_mutex_unlock(&mtx);
   return ret;
 }

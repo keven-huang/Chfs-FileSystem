@@ -16,12 +16,6 @@
  * 'write' and 'symlink') as a transaction, your job is to use write ahead log
  * to achive all-or-nothing for these transactions.
  */
-
-chfs_client::chfs_client()
-{
-    ec = new extent_client();
-}
-
 chfs_client::chfs_client(std::string extent_dst, std::string lock_dst)
 {
     ec = new extent_client(extent_dst);
@@ -50,13 +44,14 @@ chfs_client::filename(inum inum)
 bool chfs_client::isfile(inum inum)
 {
     extent_protocol::attr a;
-
+    printf("isfile inum = %lld\n", inum);
+    lc->acquire(inum);
     if (ec->getattr(inum, a) != extent_protocol::OK)
     {
         printf("error getting attr\n");
         return false;
     }
-
+    lc->release(inum);
     if (a.type == extent_protocol::T_FILE)
     {
         printf("isfile: %lld is a file\n", inum);
@@ -76,13 +71,16 @@ bool chfs_client::isdir(inum inum)
     // Oops! is this still correct when you implement symlink?
     printf("=============in isdir========");
     extent_protocol::attr a;
-
+    printf("isdir inum = %lld\n", inum);
+    lc->acquire(inum);
     if (ec->getattr(inum, a) != extent_protocol::OK)
     {
+        lc->release(inum);
         printf("error getting attr\n");
         return false;
     }
-
+    lc->release(inum);
+    printf("release dir\n");
     if (a.type == extent_protocol::T_DIR)
     {
         printf("isfile: %lld is a file\n", inum);
@@ -94,13 +92,14 @@ bool chfs_client::isdir(inum inum)
 bool chfs_client::issymlink(inum inum)
 {
     extent_protocol::attr a;
-
+    lc->acquire(inum);
     if (ec->getattr(inum, a) != extent_protocol::OK)
     {
+        lc->release(inum);
         printf("error getting attr\n");
         return false;
     }
-
+    lc->release(inum);
     if (a.type == extent_protocol::T_SYMLINK)
     {
         printf("issymlink: %lld is a symlink\n", inum);
@@ -115,12 +114,12 @@ int chfs_client::getfile(inum inum, fileinfo &fin)
 
     printf("getfile %016llx\n", inum);
     extent_protocol::attr a;
+    lc->acquire(inum);
     if (ec->getattr(inum, a) != extent_protocol::OK)
     {
         r = IOERR;
         goto release;
     }
-
     fin.atime = a.atime;
     fin.mtime = a.mtime;
     fin.ctime = a.ctime;
@@ -128,6 +127,7 @@ int chfs_client::getfile(inum inum, fileinfo &fin)
     printf("getfile %016llx -> sz %llu\n", inum, fin.size);
 
 release:
+    lc->release(inum);
     return r;
 }
 
@@ -137,6 +137,7 @@ int chfs_client::getdir(inum inum, dirinfo &din)
 
     printf("getdir %016llx\n", inum);
     extent_protocol::attr a;
+    lc->acquire(inum);
     if (ec->getattr(inum, a) != extent_protocol::OK)
     {
         r = IOERR;
@@ -147,6 +148,7 @@ int chfs_client::getdir(inum inum, dirinfo &din)
     din.ctime = a.ctime;
 
 release:
+    lc->release(inum);
     return r;
 }
 
@@ -176,8 +178,10 @@ int chfs_client::setattr(inum ino, size_t size)
     std::string buf;
     extent_protocol::attr a;
     extent_protocol::status ret;
+    lc->acquire(ino);
     if ((ret = ec->getattr(ino, a)) != extent_protocol::OK)
     {
+        lc->release(ino);
         return ret;
     }
     ec->get(ino, buf);
@@ -186,6 +190,7 @@ int chfs_client::setattr(inum ino, size_t size)
     else if (a.size > size)
         buf = buf.substr(0, size);
     ec->put(ino, buf);
+    lc->release(ino);
     return r;
 }
 
@@ -199,24 +204,29 @@ int chfs_client::create(inum parent, const char *name, mode_t mode, inum &ino_ou
      * note: lookup is what you need to check if file exist;
      * after create file or dir, you must remember to modify the parent infomation.
      */
+    lc->acquire(parent);
     ec->LOG_BEGIN();
     std::string buf;
     inum _inum;
     bool found;
     lookup(parent, name, found, _inum);
-    if (found)
+    if (found){
+        lc->release(parent);
         return EXIST;
+    }
     r = ec->create(extent_protocol::T_FILE, ino_out);
     r = ec->get(parent, buf);
     buf += ("(" + std::string(name)) + "," + filename(ino_out) + ")" + "/";
     r = ec->put(parent, buf);
     ec->LOG_COMMIT();
+    lc->release(parent);
     return r;
 }
 
 // Your code here for Lab2A: add logging to ensure atomicity
 int chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out)
 {
+    printf("in make dir\n");
     int r = OK;
 
     /*
@@ -224,25 +234,31 @@ int chfs_client::mkdir(inum parent, const char *name, mode_t mode, inum &ino_out
      * note: lookup is what you need to check if directory exist;
      * after create file or dir, you must remember to modify the parent infomation.
      */
+    lc->acquire(parent);
     ec->LOG_BEGIN();
     std::string buf;
     inum _inum;
     bool found;
     lookup(parent, name, found, _inum);
     if (found)
+    {
+        lc->release(parent);
         return EXIST;
+    }
     ec->create(extent_protocol::T_DIR, ino_out);
     ec->get(parent, buf);
     buf += ("(" + std::string(name)) + "," + filename(ino_out) + ")" + "/";
     ec->put(parent, buf);
     ec->LOG_COMMIT();
+    lc->release(parent);
+    printf("release\n");
     return r;
 }
 
 int chfs_client::lookup(inum parent, const char *name, bool &found, inum &ino_out)
 {
-    printf("=============in LoopUp========");
-    printf("parentnum = %d",parent);
+    printf("=============in LoopUp========\n");
+    printf("parentnum = %d\n", parent);
     int r = OK;
 
     /*
@@ -284,13 +300,8 @@ int chfs_client::readdir(inum dir, std::list<dirent> &list)
      * and push the dirents to the list.
      */
     std::string buf;
-    if (!isdir(dir))
-    {
-        return EXIST;
-    }
 
     ec->get(dir, buf);
-
     printf("directory_name:%s", buf.c_str());
     int start = 0;
     int end = buf.find('/');
@@ -319,7 +330,7 @@ int chfs_client::read(inum ino, size_t size, off_t off, std::string &data)
      * your code goes here.
      * note: read using ec->get().
      */
-
+    lc->acquire(ino);
     r = ec->get(ino, data);
 
     if (off <= (int)data.size())
@@ -329,7 +340,7 @@ int chfs_client::read(inum ino, size_t size, off_t off, std::string &data)
         else
             data = data.substr(off, data.size() - off);
     }
-
+    lc->release(ino);
     return r;
 }
 
@@ -337,8 +348,9 @@ int chfs_client::read(inum ino, size_t size, off_t off, std::string &data)
 int chfs_client::write(inum ino, size_t size, off_t off, const char *data,
                        size_t &bytes_written)
 {
-    ec->LOG_BEGIN();
     printf("=============in Write========");
+    lc->acquire(ino);
+    ec->LOG_BEGIN();
     int r = OK;
 
     /*
@@ -355,13 +367,15 @@ int chfs_client::write(inum ino, size_t size, off_t off, const char *data,
     buf.replace(off, size, data_buf);
     r = ec->put(ino, buf);
     ec->LOG_COMMIT();
+    lc->release(ino);
+    printf("write release\n");
     return r;
 }
 
 // Your code here for Lab2A: add logging to ensure atomicity
 int chfs_client::unlink(inum parent, const char *name)
 {
-
+    lc->acquire(parent);
     int r = OK;
 
     /*
@@ -385,11 +399,13 @@ int chfs_client::unlink(inum parent, const char *name)
     printf("======after directory=====:%s", buf.c_str());
     ec->put(parent, buf);
     ec->LOG_COMMIT();
+    lc->release(parent);
     return r;
 }
 
 int chfs_client::symlink(inum parent, const char *symbol, const char *links, inum &ino_out)
 {
+    lc->acquire(parent);
     ec->LOG_BEGIN();
     printf("=====in symlink function===\n");
     int r = OK;
@@ -397,8 +413,10 @@ int chfs_client::symlink(inum parent, const char *symbol, const char *links, inu
     inum ino;
     lookup(parent, symbol, found, ino);
     if (found)
+    {
+        lc->release(parent);
         return EXIST;
-
+    }
     ec->create(extent_protocol::T_SYMLINK, ino_out);
     printf("ino = %d\n", parent);
     ec->put(ino_out, std::string(links));
@@ -408,6 +426,7 @@ int chfs_client::symlink(inum parent, const char *symbol, const char *links, inu
     printf("buf = %s\n", buf.c_str());
     ec->put(parent, buf);
     ec->LOG_COMMIT();
+    lc->release(parent);
     return r;
 }
 
@@ -415,7 +434,9 @@ int chfs_client::readlink(inum ino, std::string &links)
 {
     int r = OK;
     std::string tmp;
+    lc->acquire(ino);
     ec->get(ino, tmp);
     links = tmp;
+    lc->release(ino);
     return r;
 }

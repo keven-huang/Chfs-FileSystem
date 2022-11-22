@@ -53,7 +53,10 @@
         "ratio": "cpp",
         "mutex": "cpp",
         "thread": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "xlocinfo": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp"
     },
     "terminal.integrated.profiles.windows": {
         
