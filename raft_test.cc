@@ -6,7 +6,8 @@
 
 typedef raft_group<list_state_machine, list_command> list_raft_group;
 
-TEST_CASE(part1, leader_election, "Initial election") {
+TEST_CASE(part1, leader_election, "Initial election")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
 
@@ -27,7 +28,8 @@ TEST_CASE(part1, leader_election, "Initial election") {
     delete group;
 }
 
-TEST_CASE(part1, re_election, "Election after network failure") {
+TEST_CASE(part1, re_election, "Election after network failure")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
 
@@ -36,6 +38,7 @@ TEST_CASE(part1, re_election, "Election after network failure") {
     int leader1 = group->check_exact_one_leader();
 
     // 2. kill the leader
+    printf("LEADER1 = %d\n", leader1);
     group->disable_node(leader1);
     mssleep(1000); // sleep 1s
     int leader2 = group->check_exact_one_leader();
@@ -45,6 +48,7 @@ TEST_CASE(part1, re_election, "Election after network failure") {
                    << "is killed, which should not be the new leader!");
 
     // 3. kill the second leader
+    printf("LEADER2 = %d\n", leader2);
     group->disable_node(leader2);
     mssleep(1000); // sleep 1s
     int leader3 = group->check_exact_one_leader();
@@ -54,6 +58,7 @@ TEST_CASE(part1, re_election, "Election after network failure") {
 
     // 4. kill the third leader
     group->disable_node(leader3);
+    printf("LEADER3 = %d\n", leader3);
     mssleep(1000); // sleep 1s
 
     // 5. now, there are only 2 nodes left with no leader.
@@ -61,18 +66,21 @@ TEST_CASE(part1, re_election, "Election after network failure") {
 
     // 6. resume a node
     group->enable_node(leader1);
+    printf("LEADER1 = %d\n", leader1);
     mssleep(1000);
     group->check_exact_one_leader();
 
     delete group;
 }
 
-TEST_CASE(part2, basic_agree, "Basic Agreement") {
+TEST_CASE(part2, basic_agree, "Basic Agreement")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(3);
     mssleep(300);
     int iters = 3;
-    for (int i = 1; i < 1 + iters; i++) {
+    for (int i = 1; i < 1 + iters; i++)
+    {
         int num_commited = group->num_committed(i);
         ASSERT(num_commited == 0, "The log " << i << " should not be committed!");
 
@@ -83,7 +91,8 @@ TEST_CASE(part2, basic_agree, "Basic Agreement") {
     delete group;
 }
 
-TEST_CASE(part2, fail_agree, "Fail Agreement") {
+TEST_CASE(part2, fail_agree, "Fail Agreement")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(3);
 
@@ -106,7 +115,8 @@ TEST_CASE(part2, fail_agree, "Fail Agreement") {
     delete group;
 }
 
-TEST_CASE(part2, fail_no_agree, "Fail No Agreement") {
+TEST_CASE(part2, fail_no_agree, "Fail No Agreement")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
     mssleep(300);
@@ -147,24 +157,29 @@ TEST_CASE(part2, fail_no_agree, "Fail No Agreement") {
     delete group;
 }
 
-std::ostream &operator<<(std::ostream &out, const std::vector<int> &vec) {
+std::ostream &operator<<(std::ostream &out, const std::vector<int> &vec)
+{
     out << "[";
     for (size_t i = 0; i < vec.size(); i++)
         out << vec[i] << (i == vec.size() - 1 ? ']' : ',');
     return out;
 }
 
-TEST_CASE(part2, concurrent_start, "Concurrent starts") {
+TEST_CASE(part2, concurrent_start, "Concurrent starts")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
     bool success;
-    for (int tries = 0; tries < 5; tries++) {
-        if (tries > 0) {
+    for (int tries = 0; tries < 5; tries++)
+    {
+        if (tries > 0)
+        {
             mssleep(3000); // give solution some time to settle
         }
         int leader = group->check_exact_one_leader();
         int term, index;
-        if (!group->nodes[leader]->new_command(list_command(1), term, index)) {
+        if (!group->nodes[leader]->new_command(list_command(1), term, index))
+        {
             continue; // leader moved on really quickly
         }
 
@@ -175,9 +190,11 @@ TEST_CASE(part2, concurrent_start, "Concurrent starts") {
         bool failed = false;
         std::vector<int> values;
 
-        for (int i = 0; i < iters; i++) {
+        for (int i = 0; i < iters; i++)
+        {
             std::thread *worker = new std::thread(
-                [=](int it, std::mutex *mtx, std::vector<int> *indices) {
+                [=](int it, std::mutex *mtx, std::vector<int> *indices)
+                {
                     int temp_term, temp_index;
                     bool is_leader = group->nodes[leader]->new_command(
                         list_command(100 + it), temp_term, temp_index);
@@ -193,21 +210,25 @@ TEST_CASE(part2, concurrent_start, "Concurrent starts") {
             threads.push_back(worker);
         }
 
-        for (int i = 0; i < iters; i++) {
+        for (int i = 0; i < iters; i++)
+        {
             threads[i]->join();
             delete threads[i];
         }
 
-        for (int i = 0; i < num_nodes; i++) {
+        for (int i = 0; i < num_nodes; i++)
+        {
             int temp_term;
             group->nodes[i]->is_leader(temp_term);
             if (temp_term != term)
                 goto loop_end; // term changed -- can't expect low RPC counts
         }
 
-        for (auto index : indices) {
+        for (auto index : indices)
+        {
             int res = group->wait_commit(index, num_nodes, term);
-            if (res == -1) {
+            if (res == -1)
+            {
                 // nodes have moved on to later terms
                 failed = true;
                 break;
@@ -217,10 +238,12 @@ TEST_CASE(part2, concurrent_start, "Concurrent starts") {
 
         if (failed)
             continue;
-        for (int i = 0; i < iters; i++) {
+        for (int i = 0; i < iters; i++)
+        {
             int ans = i + 100;
             bool find = false;
-            for (auto value : values) {
+            for (auto value : values)
+            {
                 if (value == ans)
                     find = true;
             }
@@ -236,7 +259,8 @@ TEST_CASE(part2, concurrent_start, "Concurrent starts") {
     delete group;
 }
 
-TEST_CASE(part2, rejoin, "Rejoin of partitioned leader") {
+TEST_CASE(part2, rejoin, "Rejoin of partitioned leader")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
 
@@ -273,7 +297,8 @@ TEST_CASE(part2, rejoin, "Rejoin of partitioned leader") {
 }
 
 TEST_CASE(part2, backup,
-          "Leader backs up quickly over incorrect follower logs") {
+          "Leader backs up quickly over incorrect follower logs")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
     int value = 0;
@@ -340,7 +365,8 @@ TEST_CASE(part2, backup,
     delete group;
 }
 
-TEST_CASE(part2, rpc_count, "RPC counts aren't too high") {
+TEST_CASE(part2, rpc_count, "RPC counts aren't too high")
+{
     int num_nodes = 3;
     int value = 1;
     list_raft_group *group = new list_raft_group(num_nodes);
@@ -355,7 +381,8 @@ TEST_CASE(part2, rpc_count, "RPC counts aren't too high") {
     bool success = false;
     int total2;
     bool failed;
-    for (int tries = 0; tries < 5; tries++) {
+    for (int tries = 0; tries < 5; tries++)
+    {
         if (tries > 0)
             mssleep(3000); // give solution some time to settle
         leader = group->check_exact_one_leader();
@@ -368,7 +395,8 @@ TEST_CASE(part2, rpc_count, "RPC counts aren't too high") {
         if (!is_leader)
             continue;
 
-        for (int i = 1; i < iters + 2; i++) {
+        for (int i = 1; i < iters + 2; i++)
+        {
             int term1, index1;
             is_leader =
                 group->nodes[leader]->new_command(list_command(value), term1, index1);
@@ -380,7 +408,8 @@ TEST_CASE(part2, rpc_count, "RPC counts aren't too high") {
             ASSERT(index + i == index1,
                    "wrong commit index " << index1 << ", expected " << index + i);
         }
-        for (int i = 1; i < iters + 1; i++) {
+        for (int i = 1; i < iters + 1; i++)
+        {
             int res = group->wait_commit(index + i, num_nodes, term);
             if (res == -1)
                 goto loop_end;
@@ -389,10 +418,12 @@ TEST_CASE(part2, rpc_count, "RPC counts aren't too high") {
         }
 
         failed = false;
-        for (int j = 0; j < num_nodes; j++) {
+        for (int j = 0; j < num_nodes; j++)
+        {
             int temp_term;
             group->nodes[j]->is_leader(temp_term);
-            if (temp_term != term) {
+            if (temp_term != term)
+            {
                 failed = true;
             }
         }
@@ -419,16 +450,19 @@ TEST_CASE(part2, rpc_count, "RPC counts aren't too high") {
     delete group;
 }
 
-TEST_CASE(part3, persist1, "Basic persistence") {
+TEST_CASE(part3, persist1, "Basic persistence")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
     mssleep(100);
     group->append_new_command(11, num_nodes);
 
-    for (int i = 0; i < num_nodes; i++) {
+    for (int i = 0; i < num_nodes; i++)
+    {
         group->restart(i);
     }
-    for (int i = 0; i < num_nodes; i++) {
+    for (int i = 0; i < num_nodes; i++)
+    {
         group->disable_node(i);
         group->enable_node(i);
     }
@@ -462,12 +496,14 @@ TEST_CASE(part3, persist1, "Basic persistence") {
     delete group;
 }
 
-TEST_CASE(part3, persist2, "More persistence") {
+TEST_CASE(part3, persist2, "More persistence")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
 
     int index = 1;
-    for (int iters = 0; iters < 5; iters++) {
+    for (int iters = 0; iters < 5; iters++)
+    {
         group->append_new_command(10 + index, num_nodes);
         index++;
 
@@ -506,7 +542,8 @@ TEST_CASE(part3, persist2, "More persistence") {
 }
 
 TEST_CASE(part3, persist3,
-          "Partitioned leader and one follower crash, leader restarts") {
+          "Partitioned leader and one follower crash, leader restarts")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
     group->append_new_command(101, num_nodes);
@@ -533,64 +570,81 @@ TEST_CASE(part3, persist3,
     delete group;
 }
 
-void figure_8_test(list_raft_group *group, int num_tries = 1000) {
+void figure_8_test(list_raft_group *group, int num_tries = 1000)
+{
     int num_nodes = 5;
     group->append_new_command(2048, 1);
     int nup = num_nodes;
-    for (int iters = 0; iters < num_tries; iters++) {
+    for (int iters = 0; iters < num_tries; iters++)
+    {
         int leader = -1;
-        for (int i = 0; i < num_nodes; i++) {
+        for (int i = 0; i < num_nodes; i++)
+        {
             int term, index;
-            if (group->nodes[i]->new_command(list_command(iters), term, index)) {
+            if (group->nodes[i]->new_command(list_command(iters), term, index))
+            {
                 leader = i;
             }
         }
-        if (rand() % 1000 < 100) {
+        if (rand() % 1000 < 100)
+        {
             mssleep(rand() % 500);
-        } else {
+        }
+        else
+        {
             mssleep(rand() % 13);
         }
-        if (leader != -1) {
+        if (leader != -1)
+        {
             group->disable_node(leader);
             nup--;
         }
-        if (nup < 3) {
+        if (nup < 3)
+        {
             int s = rand() % num_nodes;
-            if (!group->servers[s]->reachable()) {
+            if (!group->servers[s]->reachable())
+            {
                 group->restart(s);
                 nup++;
             }
         }
     }
 
-    for (int i = 0; i < num_nodes; i++) {
+    for (int i = 0; i < num_nodes; i++)
+    {
         group->restart(i);
     }
 
     group->append_new_command(1024, num_nodes);
 }
 
-TEST_CASE(part3, figure8, "Case ppt63") {
+TEST_CASE(part3, figure8, "Case ppt63")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
     figure_8_test(group);
     delete group;
 }
 
-TEST_CASE(part3, unreliable_agree, "Agreement under unreliable network") {
+TEST_CASE(part3, unreliable_agree, "Agreement under unreliable network")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
     group->set_reliable(false);
     std::vector<std::thread *> workers;
-    for (int iters = 1; iters < 50; iters++) {
-        for (int j = 0; j < 4; j++) {
+    for (int iters = 1; iters < 50; iters++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
             std::thread *t = new std::thread(
-                [=]() { group->append_new_command((100 * iters) + j, 1); });
+                [=]()
+                { group->append_new_command((100 * iters) + j, 1); });
             workers.push_back(t);
         }
         group->append_new_command(iters, 1);
     }
-    for (auto worker : workers) {
+    for (auto worker : workers)
+    {
         worker->join();
         delete worker;
     }
@@ -599,7 +653,8 @@ TEST_CASE(part3, unreliable_agree, "Agreement under unreliable network") {
 }
 
 TEST_CASE(part3, unreliable_figure_8,
-          "Case ppt63 under unreliable network") {
+          "Case ppt63 under unreliable network")
+{
     int num_nodes = 5;
     list_raft_group *group = new list_raft_group(num_nodes);
     group->set_reliable(false);
@@ -607,7 +662,8 @@ TEST_CASE(part3, unreliable_figure_8,
     delete group;
 }
 
-TEST_CASE(part4, basic_snapshot, "Basic snapshot") {
+TEST_CASE(part4, basic_snapshot, "Basic snapshot")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
     int leader = group->check_exact_one_leader();
@@ -622,6 +678,7 @@ TEST_CASE(part4, basic_snapshot, "Basic snapshot") {
     ASSERT(group->nodes[leader]->save_snapshot(), "leader cannot save snapshot");
     ASSERT(group->nodes[other_node]->save_snapshot(),
            "follower cannot save snapshot");
+    printf("here!");
     mssleep(2000);
     group->enable_node(killed_node);
     leader = group->check_exact_one_leader();
@@ -631,7 +688,8 @@ TEST_CASE(part4, basic_snapshot, "Basic snapshot") {
     delete group;
 }
 
-TEST_CASE(part4, restore_snapshot, "Restore snapshot after failure") {
+TEST_CASE(part4, restore_snapshot, "Restore snapshot after failure")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
     int leader = group->check_exact_one_leader();
@@ -647,7 +705,8 @@ TEST_CASE(part4, restore_snapshot, "Restore snapshot after failure") {
     delete group;
 }
 
-TEST_CASE(part4, override_snapshot, "Overrive snapshot") {
+TEST_CASE(part4, override_snapshot, "Overrive snapshot")
+{
     int num_nodes = 3;
     list_raft_group *group = new list_raft_group(num_nodes);
     int leader = group->check_exact_one_leader();
@@ -667,7 +726,8 @@ TEST_CASE(part4, override_snapshot, "Overrive snapshot") {
     delete group;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     unit_test_suite::instance()->run(argc, argv);
     return 0;
 }

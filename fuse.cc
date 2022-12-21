@@ -621,6 +621,7 @@ int main(int argc, char *argv[])
     args.allocated = 0;
 
     fd = fuse_mount(mountpoint, &args);
+    
     if (fd == -1)
     {
         fprintf(stderr, "fuse_mount failed\n");

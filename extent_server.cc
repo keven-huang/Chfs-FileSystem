@@ -11,6 +11,7 @@
 
 extent_server::extent_server() 
 {
+  printf("new inode manager\n");
   im = new inode_manager();
 }
 
@@ -25,6 +26,7 @@ int extent_server::create(uint32_t type, extent_protocol::extentid_t &id)
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
 {
+  printf("in put\n");
   id &= 0x7fffffff;
   
   const char * cbuf = buf.c_str();
@@ -64,7 +66,6 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
   memset(&attr, 0, sizeof(attr));
   im->get_attr(id, attr);
   a = attr;
-
   return extent_protocol::OK;
 }
 

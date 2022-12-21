@@ -9,11 +9,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-chfs_client::chfs_client(std::string extent_dst, std::string lock_dst)
+chfs_client::chfs_client(std::string extent_dst)
 {
+    printf("here!\n");
     ec = new extent_client(extent_dst);
     if (ec->put(1, "") != extent_protocol::OK)
         printf("error init root dir\n"); // XYB: init root dir
+    printf("exit!\n");
 }
 
 chfs_client::inum

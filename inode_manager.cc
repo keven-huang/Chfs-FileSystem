@@ -79,6 +79,7 @@ void block_manager::write_block(uint32_t id, const char *buf)
 inode_manager::inode_manager()
 {
   bm = new block_manager();
+  inum = 0;
   uint32_t root_dir = alloc_inode(extent_protocol::T_DIR);
   if (root_dir != 1)
   {
@@ -98,7 +99,7 @@ inode_manager::alloc_inode(uint32_t type)
    * note: the normal inode block should begin from the 2nd inode block.
    * the 1st is used for root_dir, see inode_manager::inode_manager().
    */
-  static int inum = 0;
+  // static int inum = 0;
 
   for (int i = 0; i < INODE_NUM; i++)
   {

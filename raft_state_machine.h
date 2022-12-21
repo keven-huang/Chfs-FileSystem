@@ -14,7 +14,7 @@ class raft_command {
 public:
     virtual ~raft_command() {
     }
-
+    
     // These interfaces will be used to persistent the command.
     virtual int size() const = 0;
     virtual void serialize(char *buf, int size) const = 0;

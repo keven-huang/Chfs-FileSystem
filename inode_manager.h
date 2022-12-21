@@ -89,7 +89,7 @@ private:
   blockid_t getBlk(inode_t *_ino, uint32_t n);
   void writeBlk(inode_t *_ino, uint32_t n);
   void put_inode(uint32_t inum, struct inode *ino);
-
+  int inum;
 public:
   inode_manager();
   uint32_t alloc_inode(uint32_t type);

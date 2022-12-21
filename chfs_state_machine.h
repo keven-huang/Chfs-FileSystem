@@ -30,7 +30,7 @@ public:
     uint32_t type;
     extent_protocol::extentid_t id;
     std::string buf;
-    std::shared_ptr<result> res;
+    std::shared_ptr<result> res;    // when applied,dnoe is true
 
     chfs_command_raft();
 
@@ -52,6 +52,7 @@ unmarshall &operator>>(unmarshall &u, chfs_command_raft &cmd);
 class chfs_state_machine : public raft_state_machine {
 public:
     virtual ~chfs_state_machine() {
+        
     }
 
     // Apply a log to the state machine.
